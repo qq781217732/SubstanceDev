@@ -1,0 +1,320 @@
+mdl 1.4;
+using shared import *;
+import mtlx::utilities::*;
+import math::*;
+import anno::*;
+import base::*;
+import tex::*;
+import state::*;
+import df::*;
+import alg::base::core::*;
+import alg::base::annotations::*;
+import mtlx::stdlib::*;
+
+export float3 getGeomPropDef_Pobject() [[ anno::hidden() ]]
+{
+    return state::transform_point(state::coordinate_internal, state::coordinate_object, state::position());
+}
+export float3 getGeomPropDef_Nobject() [[ anno::hidden() ]]
+{
+    return state::transform_normal(state::coordinate_internal, state::coordinate_object, state::normal());
+}
+export float3 getGeomPropDef_Tobject() [[ anno::hidden() ]]
+{
+    return state::transform_vector(state::coordinate_internal, state::coordinate_object, state::geometry_tangent_u(0));
+}
+export float3 getGeomPropDef_Pworld() [[ anno::hidden() ]]
+{
+    return state::transform_point(state::coordinate_internal, state::coordinate_world, state::position());
+}
+export float3 getGeomPropDef_Nworld() [[ anno::hidden() ]]
+{
+    return state::transform_normal(state::coordinate_internal, state::coordinate_world, state::normal());
+}
+export float3 getGeomPropDef_Tworld() [[ anno::hidden() ]]
+{
+    return state::transform_vector(state::coordinate_internal, state::coordinate_world, state::geometry_tangent_u(0));
+}
+export float2 getGeomPropDef_UV0() [[ anno::hidden() ]]
+{
+    return float2(state::texture_coordinate(0).x, state::texture_coordinate(0).y);
+}
+// Warning: No data map for geometry property viewdirection
+
+export float algclamp(
+    varying float val=float(0),
+    varying float i_min=float(0),
+    varying float i_max=float(1))
+[[
+    anno::display_name("Matx algclamp"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float v_0 = mtlx::stdlib::max(val, i_min);
+    float v_1 = mtlx::stdlib::min(v_0, i_max);
+    return v_1;
+}
+export float2 algclamp(
+    varying float2 val=float2(0, 0),
+    varying float2 i_min=float2(0, 0),
+    varying float2 i_max=float2(1, 1))
+[[
+    anno::display_name("Matx algclamp"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float2 v_0 = mtlx::stdlib::max(val, i_min);
+    float2 v_1 = mtlx::stdlib::min(v_0, i_max);
+    return v_1;
+}
+export float3 algclamp(
+    varying float3 val=float3(0, 0, 0),
+    varying float3 i_min=float3(0, 0, 0),
+    varying float3 i_max=float3(1, 1, 1))
+[[
+    anno::display_name("Matx algclamp"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float3 v_0 = mtlx::stdlib::max(val, i_min);
+    float3 v_1 = mtlx::stdlib::min(v_0, i_max);
+    return v_1;
+}
+export float4 algclamp(
+    varying float4 val=float4(0, 0, 0, 0),
+    varying float4 i_min=float4(0, 0, 0, 0),
+    varying float4 i_max=float4(1, 1, 1, 1))
+[[
+    anno::display_name("Matx algclamp"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float4 v_0 = mtlx::stdlib::max(val, i_min);
+    float4 v_1 = mtlx::stdlib::min(v_0, i_max);
+    return v_1;
+}
+export color3 algclamp(
+    varying color3 val=color3(0, 0, 0),
+    varying color3 i_min=color3(0, 0, 0),
+    varying color3 i_max=color3(1, 1, 1))
+[[
+    anno::display_name("Matx algclamp"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    color3 v_0 = mtlx::stdlib::max(val, i_min);
+    color3 v_1 = mtlx::stdlib::min(v_0, i_max);
+    return v_1;
+}
+export float alglevels(
+    varying float pixel=float(0),
+    varying float i_min=float(0),
+    varying float i_max=float(1),
+    varying float i_gamma=float(1))
+[[
+    anno::display_name("Matx alglevels"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float v_0 = mtlx::stdlib::subtract(pixel, i_min);
+    float v_1 = mtlx::stdlib::subtract(i_max, i_min);
+    float v_2 = mtlx::stdlib::divide(v_0, v_1);
+    float v_3 = mtlx::stdlib::constant(float(0));
+    float v_4 = mtlx::stdlib::max(v_2, v_3);
+    float v_5 = mtlx::stdlib::constant(float(1));
+    float v_6 = mtlx::stdlib::min(v_4, v_5);
+    float v_7 = mtlx::stdlib::constant(float(1));
+    float v_8 = mtlx::stdlib::divide(v_7, i_gamma);
+    float v_9 = mtlx::stdlib::power(v_6, v_8);
+    return v_9;
+}
+export float2 alglevels(
+    varying float2 pixel=float2(0, 0),
+    varying float2 i_min=float2(0, 0),
+    varying float2 i_max=float2(1, 1),
+    varying float i_gamma=float(1))
+[[
+    anno::display_name("Matx alglevels"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float2 v_0 = mtlx::stdlib::subtract(pixel, i_min);
+    float2 v_1 = mtlx::stdlib::subtract(i_max, i_min);
+    float2 v_2 = mtlx::stdlib::divide(v_0, v_1);
+    float2 v_3 = mtlx::stdlib::constant(float2(0, 0));
+    float2 v_4 = mtlx::stdlib::max(v_2, v_3);
+    float2 v_5 = mtlx::stdlib::constant(float2(1, 1));
+    float2 v_6 = mtlx::stdlib::min(v_4, v_5);
+    float v_7 = mtlx::stdlib::constant(float(1));
+    float v_8 = mtlx::stdlib::divide(v_7, i_gamma);
+    float2 v_9 = mtlx::stdlib::power(v_6, v_8);
+    return v_9;
+}
+export float3 alglevels(
+    varying float3 pixel=float3(0, 0, 0),
+    varying float3 i_min=float3(0, 0, 0),
+    varying float3 i_max=float3(1, 1, 1),
+    varying float i_gamma=float(1))
+[[
+    anno::display_name("Matx alglevels"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float3 v_0 = mtlx::stdlib::subtract(pixel, i_min);
+    float3 v_1 = mtlx::stdlib::subtract(i_max, i_min);
+    float3 v_2 = mtlx::stdlib::divide(v_0, v_1);
+    float3 v_3 = mtlx::stdlib::constant(float3(0, 0, 0));
+    float3 v_4 = mtlx::stdlib::max(v_2, v_3);
+    float3 v_5 = mtlx::stdlib::constant(float3(1, 1, 1));
+    float3 v_6 = mtlx::stdlib::min(v_4, v_5);
+    float v_7 = mtlx::stdlib::constant(float(1));
+    float v_8 = mtlx::stdlib::divide(v_7, i_gamma);
+    float3 v_9 = mtlx::stdlib::power(v_6, v_8);
+    return v_9;
+}
+export float4 alglevels(
+    varying float4 pixel=float4(0, 0, 0, 0),
+    varying float4 i_min=float4(0, 0, 0, 0),
+    varying float4 i_max=float4(1, 1, 1, 1),
+    varying float i_gamma=float(1))
+[[
+    anno::display_name("Matx alglevels"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float4 v_0 = mtlx::stdlib::subtract(pixel, i_min);
+    float4 v_1 = mtlx::stdlib::subtract(i_max, i_min);
+    float4 v_2 = mtlx::stdlib::divide(v_0, v_1);
+    float4 v_3 = mtlx::stdlib::constant(float4(0, 0, 0, 0));
+    float4 v_4 = mtlx::stdlib::max(v_2, v_3);
+    float4 v_5 = mtlx::stdlib::constant(float4(1, 1, 1, 1));
+    float4 v_6 = mtlx::stdlib::min(v_4, v_5);
+    float v_7 = mtlx::stdlib::constant(float(1));
+    float v_8 = mtlx::stdlib::divide(v_7, i_gamma);
+    float4 v_9 = mtlx::stdlib::power(v_6, v_8);
+    return v_9;
+}
+export color3 alglevels(
+    varying color3 pixel=color3(0, 0, 0),
+    varying color3 i_min=color3(0, 0, 0),
+    varying color3 i_max=color3(1, 1, 1),
+    varying float i_gamma=float(1))
+[[
+    anno::display_name("Matx alglevels"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    color3 v_0 = mtlx::stdlib::subtract(pixel, i_min);
+    color3 v_1 = mtlx::stdlib::subtract(i_max, i_min);
+    color3 v_2 = mtlx::stdlib::divide(v_0, v_1);
+    color3 v_3 = mtlx::stdlib::constant(color3(0, 0, 0));
+    color3 v_4 = mtlx::stdlib::max(v_2, v_3);
+    color3 v_5 = mtlx::stdlib::constant(color3(1, 1, 1));
+    color3 v_6 = mtlx::stdlib::min(v_4, v_5);
+    float v_7 = mtlx::stdlib::constant(float(1));
+    float v_8 = mtlx::stdlib::divide(v_7, i_gamma);
+    color3 v_9 = mtlx::stdlib::power(v_6, v_8);
+    return v_9;
+}
+export float algdot(
+    varying color3 in1=color3(0, 0, 0),
+    varying color3 in2=color3(0, 0, 0))
+[[
+    anno::display_name("Matx algdot"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float v_0 = mtlx::stdlib::swizzle_float(in1, string("r"));
+    float v_1 = mtlx::stdlib::swizzle_float(in2, string("r"));
+    float v_2 = mtlx::stdlib::multiply(v_0, v_1);
+    float v_3 = mtlx::stdlib::swizzle_float(in1, string("g"));
+    float v_4 = mtlx::stdlib::swizzle_float(in2, string("g"));
+    float v_5 = mtlx::stdlib::multiply(v_3, v_4);
+    float v_6 = mtlx::stdlib::add(v_2, v_5);
+    float v_7 = mtlx::stdlib::swizzle_float(in1, string("b"));
+    float v_8 = mtlx::stdlib::swizzle_float(in2, string("b"));
+    float v_9 = mtlx::stdlib::multiply(v_7, v_8);
+    float v_10 = mtlx::stdlib::add(v_6, v_9);
+    return v_10;
+}
+export float3 algheighttonormal(
+    varying float h=float(0),
+    varying float dU=float(0),
+    varying float dV=float(0),
+    varying float delta=float(0.0001),
+    varying float intensity=float(1))
+[[
+    anno::display_name("Matx algheighttonormal"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float v_0 = mtlx::stdlib::subtract(dU, h);
+    float v_1 = mtlx::stdlib::divide(v_0, delta);
+    float v_2 = mtlx::stdlib::subtract(dV, h);
+    float v_3 = mtlx::stdlib::divide(v_2, delta);
+    float v_4 = mtlx::stdlib::constant(float(1));
+    float v_5 = mtlx::stdlib::divide(v_4, intensity);
+    float3 v_6 = mtlx::stdlib::combine_vector3(v_1, v_3, v_5);
+    float3 v_7 = mtlx::stdlib::normalize(v_6);
+    float3 v_8 = mtlx::stdlib::constant(float3(1, 1, 1));
+    float3 v_9 = mtlx::stdlib::add(v_7, v_8);
+    float v_10 = mtlx::stdlib::constant(float(2));
+    float3 v_11 = mtlx::stdlib::divide(v_9, v_10);
+    return v_11;
+}
+export float3 algnormalTStoWS(
+    varying float3 normalTS=float3(0.5, 0.5, 1),
+    uniform bool openGL=bool(true)[[
+        alg::base::annotations::visible_by_default(false)
+    ]],
+    uniform int index=int(0)[[
+        alg::base::annotations::visible_by_default(false)
+    ]])
+[[
+    anno::display_name("Matx algnormalTStoWS"),
+    anno::description("MaterialX compliant node"),
+    anno::author("Allegorithmic")
+]]
+{
+    float3 v_0 = mtlx::stdlib::tangent(string("world"), index);
+    float v_1 = mtlx::stdlib::constant(float(0.5));
+    float3 v_2 = mtlx::stdlib::subtract(normalTS, v_1);
+    float v_3 = mtlx::stdlib::constant(float(2));
+    float3 v_4 = mtlx::stdlib::multiply(v_2, v_3);
+    float v_5 = mtlx::stdlib::swizzle_float(v_4, string("x"));
+    float3 v_6 = mtlx::stdlib::multiply(v_0, v_5);
+    float3 v_7 = mtlx::stdlib::bitangent(string("world"), index);
+    float3 v_8 = mtlx::stdlib::bitangent(string("world"), index);
+    float v_9 = mtlx::stdlib::constant(float(-1));
+    float3 v_10 = mtlx::stdlib::multiply(v_8, v_9);
+    float3 v_11 = mtlx::stdlib::switch_(v_8, v_10, openGL);
+    float v_12 = mtlx::stdlib::constant(float(0.5));
+    float3 v_13 = mtlx::stdlib::subtract(normalTS, v_12);
+    float v_14 = mtlx::stdlib::constant(float(2));
+    float3 v_15 = mtlx::stdlib::multiply(v_13, v_14);
+    float v_16 = mtlx::stdlib::swizzle_float(v_15, string("y"));
+    float3 v_17 = mtlx::stdlib::multiply(v_11, v_16);
+    float3 v_18 = mtlx::stdlib::add(v_6, v_17);
+    float3 v_19 = mtlx::stdlib::normal(string("world"));
+    float v_20 = mtlx::stdlib::constant(float(0.5));
+    float3 v_21 = mtlx::stdlib::subtract(normalTS, v_20);
+    float v_22 = mtlx::stdlib::constant(float(2));
+    float3 v_23 = mtlx::stdlib::multiply(v_21, v_22);
+    float v_24 = mtlx::stdlib::swizzle_float(v_23, string("z"));
+    float3 v_25 = mtlx::stdlib::multiply(v_19, v_24);
+    float3 v_26 = mtlx::stdlib::add(v_18, v_25);
+    float3 v_27 = mtlx::stdlib::normalize(v_26);
+    return v_27;
+}

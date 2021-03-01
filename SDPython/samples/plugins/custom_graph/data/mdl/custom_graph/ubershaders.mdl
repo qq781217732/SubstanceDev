@@ -1,0 +1,103 @@
+mdl 1.4;
+using shared import *;
+import mtlx::utilities::*;
+import math::*;
+import anno::*;
+import base::*;
+import tex::*;
+import state::*;
+import df::*;
+import alg::base::core::*;
+import alg::base::annotations::*;
+
+
+export material physicallyMetallicRoughnessDk(
+    varying float ambientOcclusion=float(1.0),
+    varying color3 baseColor=color3(0.5, 0.5, 0.5),
+    varying color3 emissiveColor=color3(0.0, 0.0, 0.0),
+    varying float height=float(0.5),
+    varying float metallic=float(0.0),
+    varying float3 normal=float3(0.0, 0.0, 0.0),
+    varying float roughness=float(0.5),
+    varying float opacity=float(1),
+    varying float specularLevel=float(.5),
+    varying float anisotropyLevel=float(0),
+    varying float anisotropyAngle=float(0),
+    varying float refraction=float(0),
+    uniform float emissiveIntensity=float(1.0)[[
+        alg::base::annotations::visible_by_default(false)
+    ]],
+    uniform float heightScale=float(0.0)[[
+        alg::base::annotations::visible_by_default(false)
+    ]],
+    uniform float refractionIOR=float(1.5)[[
+        alg::base::annotations::visible_by_default(false)
+    ]],
+    uniform float scattering=float(0)[[
+        alg::base::annotations::visible_by_default(false)
+    ]],
+    uniform float absorption=float(0)[[
+        alg::base::annotations::visible_by_default(false)
+    ]],
+    uniform float3 absorptionColor=float3(1,1,1)[[
+        alg::base::annotations::visible_by_default(false)
+    ]])=let{
+            //- Ambient occlusion mix
+            color diffuse_color = baseColor*ambientOcclusion;
+        
+            //- Specular BTDF
+            bsdf specular_btdf = df::microfacet_ggx_smith_bsdf(tint: diffuse_color, 
+                roughness_u: 0.0, mode: df::scatter_transmit);
+        
+            //- Diffuse BRDF (connect roughness parameter to diffuse as well ?)
+            bsdf diffuse_brdf = df::diffuse_reflection_bsdf(tint: diffuse_color, roughness: 0.0);
+        
+            //- Transparency mix
+            bsdf transparent_opaque_mix = df::weighted_layer(weight: refraction, layer: specular_btdf , base: diffuse_brdf);
+        
+            //- Specular Anisotropy
+            base::anisotropy_return specular_anisotropy = base::anisotropy_conversion(roughness: roughness*roughness,
+                anisotropy: anisotropyLevel, anisotropy_rotation: anisotropyAngle, tangent_u: state::texture_tangent_u(0));
+        
+            //- Specular BRDF
+            bsdf specular_brdf = df::microfacet_ggx_smith_bsdf(tint: color(1.0), 
+                roughness_u: specular_anisotropy.roughness_u, roughness_v: specular_anisotropy.roughness_v, tangent_u: specular_anisotropy.tangent_u);
+        
+            //- Dielectric Model
+            float dielectric_reflectivity = specularLevel*0.08;
+        
+            //- Custom curve for specular/diffuse angular mix
+            bsdf dielectric_model_ior_mixed = df::custom_curve_layer(normal_reflectivity: dielectric_reflectivity, grazing_reflectivity: 1.0, exponent: 5.0, 
+                weight: 1.0, layer: specular_brdf, base: transparent_opaque_mix);
+        
+            //- Metallic Model
+            bsdf metallic_model = df::directional_factor(normal_tint: baseColor, grazing_tint: color(1.0), exponent: 3.0, base: specular_brdf);
+        
+            //- Metallic mix
+            bsdf metallic_dielectric_mix = df::weighted_layer(weight: metallic, layer: metallic_model, base: dielectric_model_ior_mixed);
+        
+        } in material(
+        
+            ior: color(refractionIOR),
+        
+            surface: material_surface(
+                scattering: metallic_dielectric_mix,
+                emission: material_emission(
+                    emission: df::diffuse_edf(),
+                    intensity: emissiveColor*2.86*emissiveIntensity,
+                    mode: intensity_radiant_exitance
+                )
+            ),
+        
+            volume: material_volume(
+                absorption_coefficient: alg::base::core::volume_absorption(absorption: absorption, absorptionColor: absorptionColor),
+                scattering_coefficient: alg::base::core::volume_scattering(scattering: scattering)
+            ),
+        
+            geometry: material_geometry(
+                normal: normal,
+                displacement: alg::base::core::displacement(height: height, heightScale: heightScale),
+                cutout_opacity: opacity
+            )
+        );
+        

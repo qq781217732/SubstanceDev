@@ -1,0 +1,144 @@
+mdl 1.4;
+using shared import *;
+import mtlx::utilities::*;
+import math::*;
+import anno::*;
+import base::*;
+import tex::*;
+import state::*;
+import df::*;
+import alg::base::core::*;
+import alg::base::annotations::*;
+import mtlx::stdlib::*;
+import mtlx::alglib::*;
+
+export float3 getGeomPropDef_Pobject() [[ anno::hidden() ]]
+{
+    return state::transform_point(state::coordinate_internal, state::coordinate_object, state::position());
+}
+export float3 getGeomPropDef_Nobject() [[ anno::hidden() ]]
+{
+    return state::transform_normal(state::coordinate_internal, state::coordinate_object, state::normal());
+}
+export float3 getGeomPropDef_Tobject() [[ anno::hidden() ]]
+{
+    return state::transform_vector(state::coordinate_internal, state::coordinate_object, state::geometry_tangent_u(0));
+}
+export float3 getGeomPropDef_Pworld() [[ anno::hidden() ]]
+{
+    return state::transform_point(state::coordinate_internal, state::coordinate_world, state::position());
+}
+export float3 getGeomPropDef_Nworld() [[ anno::hidden() ]]
+{
+    return state::transform_normal(state::coordinate_internal, state::coordinate_world, state::normal());
+}
+export float3 getGeomPropDef_Tworld() [[ anno::hidden() ]]
+{
+    return state::transform_vector(state::coordinate_internal, state::coordinate_world, state::geometry_tangent_u(0));
+}
+export float2 getGeomPropDef_UV0() [[ anno::hidden() ]]
+{
+    return float2(state::texture_coordinate(0).x, state::texture_coordinate(0).y);
+}
+// Warning: No data map for geometry property viewdirection
+
+export material standard_surface(
+    varying float base=float(0.8),
+    varying color3 base_color=color3(1, 1, 1),
+    varying float diffuse_roughness=float(0),
+    varying float specular=float(1),
+    varying color3 specular_color=color3(1, 1, 1),
+    varying float specular_roughness=float(0.1),
+    varying float specular_IOR=float(1.52),
+    varying float specular_anisotropy=float(0),
+    varying float specular_rotation=float(0),
+    varying float metalness=float(0),
+    varying float transmission=float(0),
+    varying color3 transmission_color=color3(1, 1, 1),
+    varying float transmission_depth=float(0),
+    varying color3 transmission_scatter=color3(0, 0, 0),
+    varying float transmission_scatter_anisotropy=float(0),
+    varying float transmission_dispersion=float(0),
+    varying float transmission_extra_roughness=float(0),
+    varying float subsurface=float(0),
+    varying color3 subsurface_color=color3(1, 1, 1),
+    varying float3 subsurface_radius=float3(1, 1, 1),
+    varying float subsurface_scale=float(1),
+    varying float subsurface_anisotropy=float(0),
+    varying float sheen=float(0),
+    varying color3 sheen_color=color3(1, 1, 1),
+    varying float sheen_roughness=float(0.3),
+    varying bool thin_walled=bool(false),
+    varying float3 normal=getGeomPropDef_Nworld(),
+    varying float3 tangent=getGeomPropDef_Tworld(),
+    varying float coat=float(0),
+    varying color3 coat_color=color3(1, 1, 1),
+    varying float coat_roughness=float(0.1),
+    varying float coat_anisotropy=float(0.0),
+    varying float coat_rotation=float(0.0),
+    varying float coat_IOR=float(1.5),
+    varying float3 coat_normal=getGeomPropDef_Nworld(),
+    varying float coat_affect_color=float(0),
+    varying float coat_affect_roughness=float(0),
+    varying float thin_film_thickness=float(0),
+    varying float thin_film_IOR=float(1.5),
+    varying float emission=float(0),
+    varying color3 emission_color=color3(1, 1, 1),
+    varying color3 opacity=color3(1, 1, 1))=let{
+            color diffuse_color = base_color;
+
+            //- Specular BTDF
+            bsdf specular_btdf = df::microfacet_ggx_smith_bsdf(tint: diffuse_color,
+                roughness_u: 0.0, mode: df::scatter_transmit);
+
+            //- Diffuse BRDF (connect roughness parameter to diffuse as well ?)
+            bsdf diffuse_brdf = df::diffuse_reflection_bsdf(tint: diffuse_color, roughness: 0.0);
+
+            //- Transparency mix
+            bsdf transparent_opaque_mix = df::weighted_layer(weight: transmission, layer: specular_btdf , base: diffuse_brdf);
+
+            //- Specular Anisotropy
+            base::anisotropy_return specular_anisotropy2 = base::anisotropy_conversion(roughness: specular_roughness*specular_roughness,
+                anisotropy: specular_anisotropy, anisotropy_rotation: specular_rotation, tangent_u: state::texture_tangent_u(0));
+
+            //- Specular BRDF
+            bsdf specular_brdf = df::microfacet_ggx_smith_bsdf(tint: color(1.0),
+                roughness_u: specular_anisotropy2.roughness_u, roughness_v: specular_anisotropy2.roughness_v, tangent_u: specular_anisotropy2.tangent_u);
+
+            //- Dielectric Model
+            float dielectric_reflectivity = specular*0.08;
+
+            //- Custom curve for specular/diffuse angular mix
+            bsdf dielectric_model_ior_mixed = df::custom_curve_layer(normal_reflectivity: dielectric_reflectivity, grazing_reflectivity: 1.0, exponent: 5.0,
+                weight: 1.0, layer: specular_brdf, base: transparent_opaque_mix);
+
+            //- Metallic Model
+            bsdf metallic_model = df::directional_factor(normal_tint: base_color, grazing_tint: color(1.0), exponent: 3.0, base: specular_brdf);
+
+            //- Metallic mix
+            bsdf metallic_dielectric_mix = df::weighted_layer(weight: metalness, layer: metallic_model, base: dielectric_model_ior_mixed);
+
+        } in material(
+
+            ior: color(1.52),
+
+            surface: material_surface(
+                scattering: metallic_dielectric_mix,
+                emission: material_emission(
+                    emission: df::diffuse_edf(),
+                    intensity: emission_color*2.86*emission,
+                    mode: intensity_radiant_exitance
+                )
+            ),
+
+            //volume: material_volume(
+            //    absorption_coefficient: alg::base::core::volume_absorption(absorption: absorption, absorptionColor: absorptionColor),
+            //    scattering_coefficient: alg::base::core::volume_scattering(scattering: scattering)
+            //),
+
+            geometry: material_geometry(
+                normal: normal,
+                displacement: alg::base::core::displacement(height: 0.0, heightScale: 0.0),//alg::base::core::displacement(height: height, heightScale: heightScale),
+                cutout_opacity: 1.0
+            )
+        );

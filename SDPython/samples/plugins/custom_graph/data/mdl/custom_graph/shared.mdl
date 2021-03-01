@@ -1,0 +1,8 @@
+mdl 1.4;
+
+// shared library for mdl on substance
+
+// types declarations
+export struct color2 { float r; float g; };
+export typedef color color3;
+export struct color4 { float r; float g; float b; float a; };
